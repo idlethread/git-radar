@@ -11,6 +11,7 @@ else
 fi
 
 dot="$(cd "$(dirname "$([ -L "$0" ] && $READLINK_CMD -f "$0" || echo "$0")")"; pwd)"
+args=$@
 
 if [[ -z $@ ]]; then
   _git="\033[1;30mgit:(\033[0m"
@@ -29,6 +30,7 @@ if [[ -z $@ ]]; then
   _conflicted_them="\033[1;33mT\033[0m"
   _ahead_master="\xF0\x9D\x98\xAE \033[1;32m←\033[0m"
   _local_diverged="\033[1;33m⇵\033[0m"
+  _stash="\033[1;33m≡\033[0m"
   echo "git-radar - a heads up display for git"
   echo ""
   echo "examples:"
@@ -50,14 +52,17 @@ if [[ -z $@ ]]; then
   echo "   # rebase complete, our rewritten commits now need pushed up"
   printf "  $_git$_ahead_master 3 $_my_branch$_endgit"
   echo "         # origin/my-branch is up to date with master and has our 3 commits waiting merge"
+  printf "  $_git$_master$_endgit 3$_stash"
+  echo "               # You have 3 stashes stored"
 
   echo ""
   echo "usage:"
-  echo "  git-radar [--zsh|--bash] [--fetch]"
+  echo "  git-radar [--zsh|--bash|--fish] [--fetch]"
   echo ""
   echo "  --fetch  # Fetches your repo asynchronously in the background every 5 mins"
   echo "  --zsh    # Output prompt using Zsh style color characters"
   echo "  --bash   # Output prompt using Bash style color characters"
+  echo "  --fish   # Output prompt using fish style color characters"
   echo ""
   echo "Bash example:"
   echo "  export PS1=\"\\W\\\$(git-radar --bash --fetch) \""
@@ -70,6 +75,17 @@ if [[ -z $@ ]]; then
   echo "  export PROMPT=\"%1/%\\\$(git-radar --zsh --fetch) \""
   echo ""
   echo "  Same as the Bash but for Zsh."
+  echo ""
+  echo "fish example:"
+  echo "  function fish_prompt"
+  echo "    set_color \$fish_color_cwd"
+  echo "    echo -n (prompt_pwd)"
+  echo "    git-radar --fish -fetch"
+  echo "    set_color normal"
+  echo "    echo -n ' > '"
+  echo "  end"
+  echo ""
+  echo "  Same as the Bash but for fish."
   exit
 fi
 while [[ $# > 0 ]];do
@@ -77,12 +93,14 @@ while [[ $# > 0 ]];do
   shift
 
   if [[ "$command" == "--fetch" ]]; then
-    nohup $dot/fetch.sh >/dev/null &
+    nohup $dot/fetch.sh >/dev/null 2>&1 &
   fi
+
   if [[ "$command" == "--zsh" ]]; then
-    $dot/prompt.zsh
+    $dot/prompt.zsh $args
   fi
-  if [[ "$command" == "--bash" ]]; then
-    $dot/prompt.bash
+
+  if [[ "$command" == "--bash" || "$command" == "--fish" ]]; then
+    $dot/prompt.bash $args
   fi
 done
